@@ -11,3 +11,4 @@ com\example\quiz\model\User.class
 com\example\quiz\repository\QuizRepository.class
 com\example\quiz\model\Question.class
 com\example\quiz\model\Result.class
+com\example\quiz\QuizBackendApplication$1.class

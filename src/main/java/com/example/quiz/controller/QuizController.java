@@ -1,6 +1,6 @@
 package com.example.quiz.controller;
 import com.example.quiz.model.*; import com.example.quiz.repository.*; import org.springframework.http.*; import org.springframework.web.bind.annotation.*; import java.util.*;
-@RestController @RequestMapping("/api/quizzes") @CrossOrigin(origins="http://localhost:5173")
+@RestController @RequestMapping("/api/quizzes") @CrossOrigin(origins="*")
 public class QuizController{
  private final QuizRepository quizzes; private final QuestionRepository questions; public QuizController(QuizRepository q,QuestionRepository x){quizzes=q;questions=x;}
  @GetMapping public List<Quiz> all(){return quizzes.findAll();}
