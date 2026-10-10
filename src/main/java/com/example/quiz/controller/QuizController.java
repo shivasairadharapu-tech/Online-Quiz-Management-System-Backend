@@ -1,16 +1,60 @@
 package com.example.quiz.controller;
-import com.example.quiz.model.*; import com.example.quiz.repository.*; import org.springframework.http.*; import org.springframework.web.bind.annotation.*; import java.util.*;
-@RestController @RequestMapping("/api/quizzes") @CrossOrigin(origins="*")
-public class QuizController{
- private final QuizRepository quizzes; private final QuestionRepository questions; public QuizController(QuizRepository q,QuestionRepository x){quizzes=q;questions=x;}
- @GetMapping public List<Quiz> all(){return quizzes.findAll();}
- @GetMapping("/{id}") public ResponseEntity<?> one(@PathVariable Long id){return quizzes.findById(id).map(q->ResponseEntity.ok(q)).orElse(ResponseEntity.notFound().build());}
- @GetMapping("/{id}/questions") public ResponseEntity<?> qs(@PathVariable Long id){ if(!quizzes.existsById(id)) return ResponseEntity.notFound().build(); return ResponseEntity.ok(questions.findByQuizId(id).stream().map(x->Map.of("id",x.getId(),"question",x.getQuestion(),"optionA",x.getOptionA(),"optionB",x.getOptionB(),"optionC",x.getOptionC(),"optionD",x.getOptionD())).toList()); }
- @PostMapping public Quiz create(@RequestBody Quiz q){return quizzes.save(q);}
- @PutMapping("/{id}") public ResponseEntity<?> update(@PathVariable Long id,@RequestBody Quiz data){return quizzes.findById(id).map(q->{q.setTitle(data.getTitle());q.setDescription(data.getDescription());q.setCategory(data.getCategory());q.setDifficulty(data.getDifficulty());q.setDurationMinutes(data.getDurationMinutes());return ResponseEntity.ok(quizzes.save(q));}).orElse(ResponseEntity.notFound().build());}
- @DeleteMapping("/{id}") public ResponseEntity<?> delete(@PathVariable Long id){if(!quizzes.existsById(id)) return ResponseEntity.notFound().build(); questions.findByQuizId(id).forEach(questions::delete); quizzes.deleteById(id); return ResponseEntity.noContent().build();}
- @GetMapping("/{id}/questions/admin") public ResponseEntity<?> adminQs(@PathVariable Long id){ if(!quizzes.existsById(id)) return ResponseEntity.notFound().build(); return ResponseEntity.ok(questions.findByQuizId(id)); }
- @PostMapping("/{quizId}/questions") public ResponseEntity<?> add(@PathVariable Long quizId,@RequestBody Question data){return quizzes.findById(quizId).map(q->{data.setId(null);data.setQuiz(q);return ResponseEntity.ok(questions.save(data));}).orElse(ResponseEntity.notFound().build());}
- @PutMapping("/questions/{id}") public ResponseEntity<?> updateQ(@PathVariable Long id,@RequestBody Question data){return questions.findById(id).map(q->{q.setQuestion(data.getQuestion());q.setOptionA(data.getOptionA());q.setOptionB(data.getOptionB());q.setOptionC(data.getOptionC());q.setOptionD(data.getOptionD());q.setCorrectAnswer(data.getCorrectAnswer());return ResponseEntity.ok(questions.save(q));}).orElse(ResponseEntity.notFound().build());}
- @DeleteMapping("/questions/{id}") public ResponseEntity<?> deleteQ(@PathVariable Long id){if(!questions.existsById(id)) return ResponseEntity.notFound().build();questions.deleteById(id);return ResponseEntity.noContent().build();}
+
+import com.example.quiz.dto.QuestionStudentDto;
+import com.example.quiz.dto.QuizDto;
+import com.example.quiz.model.Quiz;
+import com.example.quiz.service.QuestionService;
+import com.example.quiz.service.QuizService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/quizzes")
+@CrossOrigin(origins = "*")
+public class QuizController {
+
+    private final QuizService quizService;
+    private final QuestionService questionService;
+
+    public QuizController(QuizService quizService, QuestionService questionService) {
+        this.quizService = quizService;
+        this.questionService = questionService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<QuizDto>> getAllPublished(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(quizService.getPublishedQuizzes(category, difficulty, search));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<QuizDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(quizService.getQuizDtoById(id));
+    }
+
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<List<QuestionStudentDto>> getQuestionsForStudent(@PathVariable Long id) {
+        return ResponseEntity.ok(questionService.getQuestionsForStudent(id));
+    }
+
+    // Legacy fallback mapping for existing tests/admin routes
+    @PostMapping
+    public ResponseEntity<QuizDto> createLegacy(@RequestBody Quiz quiz) {
+        return ResponseEntity.ok(quizService.createQuiz(quiz));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<QuizDto> updateLegacy(@PathVariable Long id, @RequestBody Quiz quiz) {
+        return ResponseEntity.ok(quizService.updateQuiz(id, quiz));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteLegacy(@PathVariable Long id) {
+        quizService.deleteQuiz(id);
+        return ResponseEntity.noContent().build();
+    }
 }
